@@ -13,4 +13,4 @@ services:
     volumes:
       - ./.volumes/files:/usr/src/redmine/files
       - ./.volumes/sqlite:/usr/src/redmine/sqlite
-      - ./:/usr/src/redmine/plugins/${PLUGIN_NAME}
+      - ./${PLUGIN_NAME}:/usr/src/redmine/plugins/${PLUGIN_NAME}
