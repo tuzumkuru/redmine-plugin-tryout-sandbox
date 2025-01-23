@@ -1,12 +1,13 @@
-ARG PLUGIN_NAME
-
 FROM redmine:latest
+
+ARG PLUGIN_NAME
 
 # Install required packages
 RUN apt update && apt install -y gcc make supervisor
 
 # Copy Gemfile for your plugin
 COPY ./$PLUGIN_NAME/Gemfile /usr/src/redmine/plugins/$PLUGIN_NAME/Gemfile
+
 RUN bundle install --with=development
 
 # Set up SQLite database
