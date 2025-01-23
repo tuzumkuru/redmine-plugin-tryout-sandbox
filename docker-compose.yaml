@@ -3,14 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-       - PLUGIN_NAME
     ports:
       - 9999:3000
-    environment:
-      - REDMINE_PLUGINS_MIGRATE=true
-      - RAILS_ENV=development
     volumes:
-      - ./.volumes/files:/usr/src/redmine/files
-      - ./.volumes/sqlite:/usr/src/redmine/sqlite
-      - ./${PLUGIN_NAME}:/usr/src/redmine/plugins/${PLUGIN_NAME}
+      - ./redmine/files:/usr/src/redmine/files
+      - ./redmine/sqlite:/usr/src/redmine/sqlite
+      - ./redmine/plugins:/usr/src/redmine/plugins
+      - ./redmine/themes/:/usr/src/redmine/themes
+      # - ./redmine/config/configuration.yaml:/usr/src/redmine/config/configuration.yaml
