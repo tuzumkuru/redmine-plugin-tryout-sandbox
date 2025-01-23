@@ -1,53 +1,81 @@
 namespace :redmine do
-  desc "Create a test project and a test issue"
+  desc "Create random projects, issues, and users in Redmine"
   task create_test_data: :environment do
-    # Check if a project with the identifier already exists
-    project_identifier = "test-project"
-    existing_project = Project.find_by(identifier: project_identifier)
-    if existing_project
-      puts "Project with identifier '#{project_identifier}' already exists. Skipping creation."
-      project = existing_project
-    else
-      # Create the test project
+    require 'faker'
+
+    # Set Faker to use a valid locale (e.g., English)
+    Faker::Config.locale = 'en'
+
+    # Create 5 random users
+    5.times do
+      user = User.new(
+        firstname: Faker::Name.first_name,
+        lastname: Faker::Name.last_name,
+        mail: Faker::Internet.email,
+        login: Faker::Internet.username(specifier: 5..10),
+        password: 'password123',
+        password_confirmation: 'password123',
+        admin: false
+      )
+      user.save!
+      puts "Created user: #{user.login}"
+    end
+
+    # Create 5 random projects and 10 issues in each
+    5.times do |i|
       project = Project.new(
-        name: "Test Project",
-        identifier: project_identifier,
-        description: "This is a test project."
+        name: "Project #{i + 1}: #{Faker::Company.name}",
+        identifier: "project_#{i + 1}_#{Faker::Internet.uuid[0..7]}",
+        description: Faker::Company.catch_phrase,
+        is_public: [true, false].sample
       )
+
       if project.save
-        puts "Test project created with ID: #{project.id}"
+        puts "Created project: #{project.name}"
+
+        # Add random users as members of the project
+        User.limit(5).each do |user|
+          member = Member.new(
+            project: project,
+            user: user,
+            roles: [Role.find_by(name: 'Developer') || Role.first]
+          )
+          member.save!
+          puts "Added user #{user.login} to project #{project.name}"
+        end
+
+        # Create 10 random issues for the project
+        10.times do
+          issue = Issue.new(
+            project: project,
+            tracker: Tracker.first || Tracker.find_or_create_by!(name: 'Bug'),
+            author: User.order('RANDOM()').first,
+            subject: Faker::Lorem.sentence(word_count: 5),
+            description: Faker::Lorem.paragraph(sentence_count: 3),
+            priority: IssuePriority.first || IssuePriority.find_or_create_by!(name: 'Normal')
+          )
+          if issue.save
+            puts "Created issue: #{issue.subject} in project #{project.name}"
+
+            # Add random history to the issue
+            rand(1..5).times do
+              journal = Journal.new(
+                journalized: issue,
+                user: User.order('RANDOM()').first,
+                notes: Faker::Lorem.sentence(word_count: 10)
+              )
+              journal.save!
+              puts "Added history: #{journal.notes} to issue #{issue.subject}"
+            end
+          else
+            puts "Failed to create issue: #{issue.errors.full_messages.join(', ')}"
+          end
+        end
       else
-        puts "Failed to create test project: #{project.errors.full_messages.join(', ')}"
-        exit 1
+        puts "Failed to create project: #{project.errors.full_messages.join(', ')}"
       end
     end
 
-    # Fetch the first user as the author (assuming default data is loaded)
-    author = User.active.first
-    unless author
-      puts "No active user found to set as the author of the issue. Please ensure users exist."
-      exit 1
-    end
-
-    # Create a test issue if it doesn't already exist
-    issue_subject = "Test Issue"
-    existing_issue = Issue.find_by(subject: issue_subject, project_id: project.id)
-    if existing_issue
-      puts "Issue with subject '#{issue_subject}' already exists in the project. Skipping creation."
-    else
-      issue = Issue.new(
-        project_id: project.id,
-        tracker: Tracker.first, # Assuming you have at least one tracker
-        subject: issue_subject,
-        description: "This is a description",
-        author_id: author.id
-      )
-      if issue.save
-        puts "Test issue created with ID: #{issue.id}"
-      else
-        puts "Failed to create test issue: #{issue.errors.full_messages.join(', ')}"
-        exit 1
-      end
-    end
+    puts "Random data creation completed!"
   end
 end
