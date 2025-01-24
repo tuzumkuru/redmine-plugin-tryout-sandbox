@@ -4,7 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      - RAILS_ENV=development
       - SKIP_INITIAL_SETUP=false  # set to true to skip initial setup
+      - RUN_CHOWN=true # set to true to change owner of files accordingly
     ports:
       - 9999:3000
     volumes:
