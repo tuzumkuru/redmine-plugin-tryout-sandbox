@@ -29,14 +29,15 @@ if [ ! -f "$FLAG_FILE" ]; then
     echo "Faker gem not found in Gemfile."
   fi
 
-
-
   # Create flag file to indicate setup is done
   touch "$FLAG_FILE"
 fi
 
 # Do plugin migrations before every start
 rails redmine:plugins:migrate
+
+# Remove the server PID file if it exists
+rm -f /usr/src/redmine/tmp/pids/server.pid
 
 # Start the rails server
 rails server -e development -b 0.0.0.0
