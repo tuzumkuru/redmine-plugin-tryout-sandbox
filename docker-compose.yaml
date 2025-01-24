@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - SKIP_INITIAL_SETUP=false  # set to true to skip initial setup
     ports:
       - 9999:3000
     volumes:
@@ -10,4 +12,4 @@ services:
       - ./redmine/sqlite:/usr/src/redmine/sqlite
       - ./redmine/plugins:/usr/src/redmine/plugins
       - ./redmine/themes/:/usr/src/redmine/themes
-      # - ./redmine/config/configuration.yaml:/usr/src/redmine/config/configuration.yaml
+      - ./redmine/config/configuration.yml:/usr/src/redmine/config/configuration.yml

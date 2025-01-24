@@ -9,25 +9,37 @@ bundle install
 # Flag file to indicate if initial setup has been done before
 FLAG_FILE="/usr/src/redmine/initial_setup_done"
 
-# Check if setup has been done before
-if [ ! -f "$FLAG_FILE" ]; then
+# Check if setup should be skipped based on an environment variable
+if [ "${SKIP_INITIAL_SETUP}" != "true" ] && [ ! -f "$FLAG_FILE" ]; then
   # Run database migrations and initial setup  
   rails db:migrate
   echo 'en' | rails redmine:load_default_data
-  rails redmine:create_test_data
-  rails redmine:set_admin_password
 
-  # Check if the Gemfile contains the faker gem and remove it
-  if grep -q 'gem ["'\'']faker["'\'']' /usr/src/redmine/Gemfile; then
-    echo "Faker gem found in Gemfile, removing it..."
-    sed -i -e "\$s/\s*gem 'faker'\s*$//" /usr/src/redmine/Gemfile  # Remove faker since it creates errors
-    echo "Faker gem removed from Gemfile."
-    echo "Running 'bundle clean --force' to clean up any unused gems..."
+  # Add faker gem to Gemfile dynamically if not already present
+  if ! grep -q "gem ['\"]faker['\"]" /usr/src/redmine/Gemfile; then
+    echo "Adding faker gem to Gemfile..."
+    echo "gem 'faker'" >> /usr/src/redmine/Gemfile
+    bundle install
+    ADDED_FAKER=true
+  else
+    echo "Faker gem is already in Gemfile."
+    ADDED_FAKER=false
+  fi
+
+  # Run tasks that depend on the faker gem
+  rails redmine:create_test_data
+
+  # Remove faker gem from Gemfile if it was added by this script
+  if [ "$ADDED_FAKER" = true ]; then
+    echo "Removing faker gem from Gemfile..."
+    sed -i "/gem 'faker'/d" /usr/src/redmine/Gemfile
+    echo "Running 'bundle clean --force' to clean up unused gems..."
     bundle clean --force
     echo "'bundle clean --force' completed."
-  else
-    echo "Faker gem not found in Gemfile."
   fi
+
+  # Set admin password
+  rails redmine:set_admin_password
 
   # Create flag file to indicate setup is done
   touch "$FLAG_FILE"
